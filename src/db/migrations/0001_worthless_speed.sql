@@ -1,0 +1,1 @@
+ALTER TABLE "test_cases" ADD COLUMN "reviewed" boolean DEFAULT false NOT NULL;
