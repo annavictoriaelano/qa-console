@@ -1,6 +1,6 @@
 @AGENTS.md
 
-# qa-web-app — Claude Working Doc (Anna)
+# qa-console — Claude Working Doc (Anna)
 
 > Solo portfolio project. This file is **strictly Anna's working doc** — not for recruiters, not for the friend collaborating on frontend later. README is the public face.
 
@@ -241,8 +241,8 @@ Owns all writes to the vault (session log, TODO, progress, patterns, bugs). Univ
 ### Drizzle config: @drizzle.config.ts
 **Read when:** Running migrations, understanding the DIRECT vs POOLED URL split.
 
-### Webapp MVP plan: @../../ase-workspace/Obsidian Vaults/HazardCo QA Team/xannavictoriaelano/repositories/qa-web-app/webapp-mvp-plan.md
+### Webapp MVP plan: @../../ase-workspace/Obsidian Vaults/HazardCo QA Team/xannavictoriaelano/repositories/qa-console/webapp-mvp-plan.md
 **Read when:** Anna asks about scope, sequence, deferred features, ownership split, or "what comes next."
 
-### Webapp vault folder: `xannavictoriaelano/repositories/qa-web-app/`
-**Contains:** `webapp-mvp-plan.md`, `TO-DO-qa-web-app.md`, `claude-sessions/`. This is the canonical home for qa-web-app planning, TODOs, and session logs. Hub QA automation TODOs stay in `xannavictoriaelano/test-automation-upskill/TO-DO-hub.md`.
+### Webapp vault folder: `xannavictoriaelano/repositories/qa-console/`
+**Contains:** `webapp-mvp-plan.md`, `TO-DO-qa-console.md`, `claude-sessions/`. This is the canonical home for qa-console planning, TODOs, and session logs. Hub QA automation TODOs stay in `xannavictoriaelano/test-automation-upskill/TO-DO-hub.md`.
