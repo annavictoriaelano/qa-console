@@ -1,10 +1,22 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { verifyToken, SESSION_COOKIE } from "@/lib/session";
+import { verifyApiToken } from "@/lib/api-auth";
 
 const PUBLIC_PATHS = new Set<string>(["/login"]);
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (pathname.startsWith("/api/")) {
+    if (verifyApiToken(request.headers.get("authorization"))) {
+      return NextResponse.next();
+    }
+    return Response.json(
+      { error: "unauthorized" },
+      { status: 401, headers: { "WWW-Authenticate": "Bearer" } },
+    );
+  }
+
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   const session = await verifyToken(token);
 

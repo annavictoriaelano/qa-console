@@ -1,20 +1,18 @@
 "use server";
 
-import { eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { db, testCases } from "@/db";
 import { verifySession } from "@/lib/dal";
-
-const TC_STATUS = ["draft", "ready", "automated", "deprecated"] as const;
-const AUTOMATION_STATUS = [
-  "not_automated",
-  "in_progress",
-  "scripted",
-  "true_pass",
-] as const;
-const LAST_RUN_STATUS = ["PASSED", "FAILED", "BLOCKED", "MANUAL"] as const;
-const COUNTRY = ["NZ", "AU", "UK", "ANY"] as const;
+import {
+  AUTOMATION_STATUS,
+  COUNTRY,
+  LAST_RUN_STATUS,
+  TC_STATUS,
+  bulkAddTag,
+  bulkSetReviewed,
+  updateTestCase,
+  type TestCasePatch,
+} from "@/lib/test-cases";
 
 function str(v: FormDataEntryValue | null): string | null {
   if (v === null) return null;
@@ -60,7 +58,7 @@ function dateOrNull(v: FormDataEntryValue | null): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-export async function updateTestCase(formData: FormData): Promise<void> {
+export async function updateTestCaseAction(formData: FormData): Promise<void> {
   await verifySession();
   const key = String(formData.get("key") ?? "").trim();
   const redirectTo = String(formData.get("redirectTo") ?? "/test-case-library");
@@ -70,33 +68,32 @@ export async function updateTestCase(formData: FormData): Promise<void> {
   const title = str(formData.get("title"));
   if (!title) throw new Error("Title cannot be empty");
 
-  await db
-    .update(testCases)
-    .set({
-      title,
-      status: inEnum(formData.get("status"), TC_STATUS, "draft"),
-      reviewed: formData.get("reviewed") === "on",
-      feature: str(formData.get("feature")),
-      screen: str(formData.get("screen")),
-      testSuite: str(formData.get("testSuite")),
-      preconditions: str(formData.get("preconditions")),
-      expectedResult: str(formData.get("expectedResult")),
-      tags: arr(formData.get("tags")),
-      userRole: str(formData.get("userRole")),
-      plan: str(formData.get("plan")),
-      country: inEnum(formData.get("country"), COUNTRY, "ANY"),
-      state: str(formData.get("state")),
-      automationStatus: inEnum(
-        formData.get("automationStatus"),
-        AUTOMATION_STATUS,
-        "not_automated",
-      ),
-      jiraTicket: str(formData.get("jiraTicket")),
-      sourceOfTruthLink: str(formData.get("sourceOfTruthLink")),
-      lastRunAt: dateOrNull(formData.get("lastRunAt")),
-      lastRunStatus: nullableEnum(formData.get("lastRunStatus"), LAST_RUN_STATUS),
-    })
-    .where(eq(testCases.key, key));
+  const patch: TestCasePatch = {
+    title,
+    status: inEnum(formData.get("status"), TC_STATUS, "draft"),
+    reviewed: formData.get("reviewed") === "on",
+    feature: str(formData.get("feature")),
+    screen: str(formData.get("screen")),
+    testSuite: str(formData.get("testSuite")),
+    preconditions: str(formData.get("preconditions")),
+    expectedResult: str(formData.get("expectedResult")),
+    tags: arr(formData.get("tags")),
+    userRole: str(formData.get("userRole")),
+    plan: str(formData.get("plan")),
+    country: inEnum(formData.get("country"), COUNTRY, "ANY"),
+    state: str(formData.get("state")),
+    automationStatus: inEnum(
+      formData.get("automationStatus"),
+      AUTOMATION_STATUS,
+      "not_automated",
+    ),
+    jiraTicket: str(formData.get("jiraTicket")),
+    sourceOfTruthLink: str(formData.get("sourceOfTruthLink")),
+    lastRunAt: dateOrNull(formData.get("lastRunAt")),
+    lastRunStatus: nullableEnum(formData.get("lastRunStatus"), LAST_RUN_STATUS),
+  };
+
+  await updateTestCase(key, patch);
 
   revalidatePath("/test-case-library");
   redirect(redirectTo);
@@ -111,35 +108,17 @@ export async function bulkAction(formData: FormData): Promise<void> {
   if (keys.length === 0) redirect(redirectTo);
 
   if (op === "markReviewed") {
-    await db
-      .update(testCases)
-      .set({ reviewed: true })
-      .where(inArray(testCases.key, keys));
+    await bulkSetReviewed(keys, true);
   } else if (op === "markUnreviewed") {
-    await db
-      .update(testCases)
-      .set({ reviewed: false })
-      .where(inArray(testCases.key, keys));
+    await bulkSetReviewed(keys, false);
   } else if (op === "addTag") {
     const tag = String(formData.get("tagInput") ?? "").trim();
     if (!tag) redirect(redirectTo);
-
-    const rows = await db
-      .select({ key: testCases.key, tags: testCases.tags })
-      .from(testCases)
-      .where(inArray(testCases.key, keys));
-
-    for (const row of rows) {
-      const existing = row.tags ?? [];
-      if (!existing.includes(tag)) {
-        await db
-          .update(testCases)
-          .set({ tags: [...existing, tag] })
-          .where(eq(testCases.key, row.key));
-      }
-    }
+    await bulkAddTag(keys, tag);
   }
 
   revalidatePath("/test-case-library");
   redirect(redirectTo);
 }
+
+export { updateTestCaseAction as updateTestCase };
